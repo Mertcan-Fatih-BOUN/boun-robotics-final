@@ -1,4 +1,7 @@
+package robo;
+
 import java.io.IOException;
+
 
 import lejos.hardware.BrickFinder;
 import lejos.hardware.Button;
@@ -22,6 +25,8 @@ import lejos.utility.PilotProps;
 public class Main {
 	static EV3 ev3 = (EV3) BrickFinder.getDefault();
 	static GraphicsLCD graphicsLCD = ev3.getGraphicsLCD();
+	public static int current_phase = -1;
+	public static float currentGyroFix = 0;
 	
 	static EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.A);
 	static EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.D);
@@ -43,24 +48,39 @@ public class Main {
 	
 	public static void main(String[] args)  throws Exception {
 		setPilot();
+		pilot.setTravelSpeed(100);
+		pilot.setAcceleration(50);
+		
 		
 		graphicsLCD.clear();
 		graphicsLCD.drawString("Hello World", graphicsLCD.getWidth()/2, graphicsLCD.getHeight()/2, GraphicsLCD.VCENTER|GraphicsLCD.HCENTER);
 		
-		while (Button.readButtons() != Button.ID_ESCAPE) {
-			if(Button.readButtons() == Button.ID_UP){
-				ultrasonicMotor.rotate(2);
-			}
-			if(Button.readButtons() == Button.ID_DOWN){
-				ultrasonicMotor.rotate(-2);
-			}
-			graphicsLCD.clear();
-			graphicsLCD.drawString(readRight() + "   " + readLeft(), graphicsLCD.getWidth()/2, graphicsLCD.getHeight()/2, GraphicsLCD.VCENTER|GraphicsLCD.HCENTER);
-			
+		while (Button.readButtons() != Button.ID_UP) {
 			Delay.msDelay(100);
 		}
+		current_phase = Constants.PHASE1;
+		//start_(current_phase);
+		Movements.goStraight(50);
+		Movements.rotate_exact(90);
+		setGyroStabilizer(90);
 		
+		Movements.goStraight(50);
+		Movements.rotate_exact(90);
+		setGyroStabilizer(180);
 		
+
+		Movements.goStraight(50);
+		Movements.rotate_exact(90);
+		setGyroStabilizer(270);
+		
+
+		Movements.goStraight(50);
+		Movements.rotate_exact(90);
+		setGyroStabilizer(0);
+		/*Movements.rotate_exact(-45);
+		Movements.rotate_exact(90);
+		Movements.rotate_exact(-90);
+		*/
 	}
 	
 	public static void setPilot() throws IOException{
@@ -98,10 +118,13 @@ public class Main {
 	}
 	
 	public static float readAngle(){
-		float [] sample = new float[gyroSensor.sampleSize()];
-    	sampleProviderRight.fetchSample(sample, 0);
+		float [] sample = new float[sampleProviderGyro.sampleSize()];
+    	sampleProviderGyro.fetchSample(sample, 0);
     	
     	float angle = sample[0];
+    	graphicsLCD.clear();
+		graphicsLCD.drawString(angle + "", graphicsLCD.getWidth()/2, graphicsLCD.getHeight()/2, GraphicsLCD.VCENTER|GraphicsLCD.HCENTER);
+		
     	return angle;
 	}
 	
@@ -111,4 +134,9 @@ public class Main {
     	return new float[]{color.getRed(), color.getGreen(), color.getBlue()};
 	}
 	
+	public static void setGyroStabilizer(float f){
+		currentGyroFix = f;
+	}
+	public static float getGyroStabilizer(){return currentGyroFix;}
+		
 }
