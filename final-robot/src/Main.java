@@ -1,5 +1,9 @@
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 import lejos.hardware.BrickFinder;
 import lejos.hardware.Button;
@@ -53,16 +57,31 @@ public class Main {
 	static double DISTANCE = -1;
 	static int DIRECTION = 0;
 
+	static OutputStream outputStream;
+	
+	static DataOutputStream dataOutputStream;
+	
 	public static void main(String[] args) throws Exception {
 		setPilot();
 		pilot.setTravelSpeed(100);
 		pilot.setAcceleration(50);
 		movements = new Movements(gyroSensor, pilot);
 
+		ServerSocket serverSocket = new ServerSocket(1234);
+		Socket client = serverSocket.accept();
+		
 		graphicsLCD.clear();
 		graphicsLCD.drawString("Hello World", graphicsLCD.getWidth() / 2, graphicsLCD.getHeight() / 2,
 				GraphicsLCD.VCENTER | GraphicsLCD.HCENTER);
-
+		
+		outputStream = client.getOutputStream();
+		
+		dataOutputStream = new DataOutputStream(outputStream);
+		
+		Delay.msDelay(100);
+		
+		Delay.msDelay(100);
+		
 		while (Button.readButtons() != Button.ID_UP) {
 			Delay.msDelay(100);
 		}
@@ -131,6 +150,20 @@ public class Main {
 		 */
 	}
 
+	public static void send_to_pc(String s, float f){
+		try {
+			dataOutputStream.writeChars(s);
+			dataOutputStream.flush();
+			
+			dataOutputStream.writeFloat(f);
+			dataOutputStream.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
 	public static void setPilot() throws IOException {
 		PilotProps pilotProps = new PilotProps();
 		pilotProps.setProperty(PilotProps.KEY_WHEELDIAMETER, "5.5");
@@ -163,7 +196,7 @@ public class Main {
 			Delay.msDelay(50);
 			Thread.yield();
 		}
-
+		send_to_pc("left", distance / 3 * 100);
 		return distance / 3 * 100;
 	}
 
@@ -182,7 +215,7 @@ public class Main {
 			Delay.msDelay(50);
 			Thread.yield();
 		}
-
+		send_to_pc("right", distance / 3 * 100);
 		return distance / 3 * 100;
 	}
 
@@ -202,7 +235,7 @@ public class Main {
 			Delay.msDelay(50);
 			Thread.yield();
 		}
-
+		send_to_pc("forward", distance / 3 * 100);
 		return distance / 3 * 100;
 
 	}

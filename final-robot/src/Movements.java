@@ -81,6 +81,7 @@ public class Movements {
 		float[] sample = new float[sampleProviderGyro.sampleSize()];
 		sampleProviderGyro.fetchSample(sample, 0);
 		float angle = sample[0];
+		Main.send_to_pc("gyro", angle);
 		return angle;
 	}
 
