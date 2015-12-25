@@ -150,9 +150,9 @@ public class Main {
 		 */
 	}
 
-	public static void send_to_pc(String s, float f) {
+	public static void send_to_pc(int i, float f) {
 		try {
-			dataOutputStream.writeChars(s);
+			dataOutputStream.writeInt(i);
 			dataOutputStream.flush();
 
 			dataOutputStream.writeFloat(f);
@@ -196,7 +196,7 @@ public class Main {
 			Delay.msDelay(50);
 			Thread.yield();
 		}
-		send_to_pc("left", distance / 3 * 100);
+		send_to_pc(Constants.LOG_LEFT, distance / 3 * 100);
 		return distance / 3 * 100;
 	}
 
@@ -215,7 +215,7 @@ public class Main {
 			Delay.msDelay(50);
 			Thread.yield();
 		}
-		send_to_pc("right", distance / 3 * 100);
+		send_to_pc(Constants.LOG_RIGHT, distance / 3 * 100);
 		return distance / 3 * 100;
 	}
 
@@ -235,7 +235,7 @@ public class Main {
 			Delay.msDelay(50);
 			Thread.yield();
 		}
-		send_to_pc("forward", distance / 3 * 100);
+		send_to_pc(Constants.LOG_FORWARD, distance / 3 * 100);
 		return distance / 3 * 100;
 
 	}
