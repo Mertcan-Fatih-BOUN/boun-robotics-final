@@ -9,8 +9,10 @@ public class Movements {
 	}
 	
 	public static void goStraight_(int distance){
-		Main.pilot.travel(distance);
 		float difference = Main.getGyroStabilizer() - Main.readAngle();
+		rotate_exact(difference);
+		Main.pilot.travel(distance);
+		difference = Main.getGyroStabilizer() - Main.readAngle();
 		rotate_exact(difference);
 	}
 	
