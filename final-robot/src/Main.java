@@ -24,6 +24,7 @@ public class Main {
 	static GraphicsLCD graphicsLCD = ev3.getGraphicsLCD();
 	public static int current_phase = -1;
 	public static float currentGyroFix = 0;
+	public static int current_usonic_mode = Constants.FORWARD;
 
 	static EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.A);
 	static EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.D);
@@ -93,20 +94,40 @@ public class Main {
 		pilot = new DifferentialPilot(wheelDiameter, trackWidth, leftMotor, rightMotor, reverse);
 	}
 
-	public static float readLeft() {
-		float[] sample = new float[sampleProviderLeft.sampleSize()];
-		sampleProviderLeft.fetchSample(sample, 0);
-
-		float distance = sample[0];
-		return distance;
+	public static float readLeft(){
+		if(current_usonic_mode != Constants.LEFT){
+			ultrasonicMotor.rotate(90);
+			current_usonic_mode = Constants.LEFT;
+		}
+		float [] sample = new float[sampleProviderLeft.sampleSize()];
+    	sampleProviderLeft.fetchSample(sample, 0);
+    	
+    	float distance = sample[0];
+    	return distance;
 	}
-
-	public static float readRight() {
-		float[] sample = new float[sampleProviderRight.sampleSize()];
-		sampleProviderRight.fetchSample(sample, 0);
-
-		float distance = sample[0];
-		return distance;
+	
+	public static float readRight(){
+		if(current_usonic_mode != Constants.FORWARD){
+			ultrasonicMotor.rotate(-90);
+			current_usonic_mode = Constants.FORWARD;
+		}
+		float [] sample = new float[sampleProviderRight.sampleSize()];
+    	sampleProviderRight.fetchSample(sample, 0);
+    	
+    	float distance = sample[0];
+    	return distance;
+	}
+	
+	public static float readForward(){
+		if(current_usonic_mode != Constants.FORWARD){
+			ultrasonicMotor.rotate(90);
+			current_usonic_mode = Constants.FORWARD;
+		}
+		float [] sample = new float[sampleProviderLeft.sampleSize()];
+    	sampleProviderLeft.fetchSample(sample, 0);
+    	
+    	float distance = sample[0];
+    	return distance;
 	}
 
 	public static float[] readColor() {
