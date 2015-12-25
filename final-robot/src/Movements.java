@@ -18,11 +18,18 @@ public class Movements {
 	}
 
 	public void goStraight(int distance) {
-		if (distance <= 10) {
-			goStraight_(distance);
+		int _dir = 0;
+		if (distance < 0)
+			_dir = -1;
+		else
+			_dir = 1;
+		int abs_distance = distance / _dir;
+
+		if (abs_distance <= 10) {
+			goStraight_(_dir * abs_distance);
 		} else {
-			goStraight_(10);
-			goStraight(distance - 10);
+			goStraight_(_dir * 10);
+			goStraight(_dir * (abs_distance - 10));
 		}
 	}
 
@@ -53,10 +60,10 @@ public class Movements {
 	}
 
 	private void rotate_exact_to(float goal) {
-		float diff = goal  - readAngle();
+		float diff = goal - readAngle();
 		while (Math.abs(diff) > 0.5) {
 			pilot.rotate(diff);
-			diff = goal  - readAngle();
+			diff = goal - readAngle();
 		}
 	}
 

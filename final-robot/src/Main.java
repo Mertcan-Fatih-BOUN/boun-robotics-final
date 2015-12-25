@@ -16,6 +16,7 @@ import lejos.robotics.Color;
 import lejos.robotics.ColorAdapter;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
+import lejos.robotics.navigation.Pose;
 import lejos.utility.Delay;
 import lejos.utility.PilotProps;
 
@@ -31,12 +32,12 @@ public class Main {
 	static EV3LargeRegulatedMotor gripperMotor = new EV3LargeRegulatedMotor(MotorPort.B);
 	static NXTRegulatedMotor ultrasonicMotor = new NXTRegulatedMotor(MotorPort.C);
 
-	static NXTUltrasonicSensor ultrasonicSensorLeft = new NXTUltrasonicSensor(SensorPort.S2);
-	static NXTUltrasonicSensor ultrasonicSensorRight = new NXTUltrasonicSensor(SensorPort.S4);
+	static NXTUltrasonicSensor ultrasonicSensorLeft = new NXTUltrasonicSensor(SensorPort.S4);
+	static NXTUltrasonicSensor ultrasonicSensorRight = new NXTUltrasonicSensor(SensorPort.S2);
 	static EV3ColorSensor lightSensor = new EV3ColorSensor(SensorPort.S3);
 	static EV3GyroSensor gyroSensor = new EV3GyroSensor(SensorPort.S1);
 
-	static ColorAdapter colorAdapter = new ColorAdapter(lightSensor);
+	// static ColorAdapter colorAdapter = new ColorAdapter(lightSensor);
 	static SampleProvider sampleProviderGyro = gyroSensor.getAngleAndRateMode();
 	static SampleProvider sampleProviderLeft = ultrasonicSensorLeft.getDistanceMode();
 	static SampleProvider sampleProviderRight = ultrasonicSensorRight.getDistanceMode();
@@ -44,6 +45,9 @@ public class Main {
 	static DifferentialPilot pilot;
 
 	static Movements movements;
+	static int EDGE = -1;
+	static double DISTANCE = -1;
+	static int DIRECTION = 0;
 
 	public static void main(String[] args) throws Exception {
 		setPilot();
@@ -59,18 +63,64 @@ public class Main {
 			Delay.msDelay(100);
 		}
 		current_phase = Constants.PHASE1;
+
+		double forward_distance;
+		double backward_distance;
+
+		double left_distance = readLeft();
+		double right_ditance = readRight();
+
+		if (left_distance < right_ditance)
+			DIRECTION = -1;
+		else
+			DIRECTION = 1;
+
+		while (current_phase == Constants.PHASE1) {
+			if (DISTANCE == -1)
+				forward_distance = readForward();
+			else
+				forward_distance = 220 - DISTANCE;
+
+			double traveledDistance = travelUntilNoneWall(forward_distance);
+
+			// Encounter wall
+			if (traveledDistance == -1) {
+				DISTANCE = readForward();
+				movements.rotate_back();
+				DIRECTION *= -1;
+			} else {
+				// Now where it is
+				if (DISTANCE != -1) {
+					DISTANCE += traveledDistance;
+					if (DISTANCE > 66 && DISTANCE < 132) {
+						enterEntrance();
+					} else
+						rotateCorner();
+				}
+				// Not sure
+				else {
+					boolean isEntrance = isEntranceByControllForward();
+					if (isEntrance)
+						enterEntrance();
+					else
+						rotateCorner();
+				}
+			}
+
+		}
+
 		// start_(current_phase);
-		movements.goStraight(50);
-		movements.rotate_left();
-
-		movements.goStraight(50);
-		movements.rotate_left();
-
-		movements.goStraight(50);
-		movements.rotate_left();
-
-		movements.goStraight(50);
-		movements.rotate_left();
+		// movements.goStraight(50);
+		// movements.rotate_left();
+		//
+		// movements.goStraight(50);
+		// movements.rotate_left();
+		//
+		// movements.goStraight(50);
+		// movements.rotate_left();
+		//
+		// movements.goStraight(50);
+		// movements.rotate_left();
 		/*
 		 * Movements.rotate_exact(-45); Movements.rotate_exact(90);
 		 * Movements.rotate_exact(-90);
@@ -94,47 +144,70 @@ public class Main {
 		pilot = new DifferentialPilot(wheelDiameter, trackWidth, leftMotor, rightMotor, reverse);
 	}
 
-	public static float readLeft(){
-		if(current_usonic_mode != Constants.LEFT){
+	public static float readLeft() {
+		if (current_usonic_mode != Constants.LEFT) {
 			ultrasonicMotor.rotate(90);
 			current_usonic_mode = Constants.LEFT;
 		}
-		float [] sample = new float[sampleProviderLeft.sampleSize()];
-    	sampleProviderLeft.fetchSample(sample, 0);
-    	
-    	float distance = sample[0];
-    	return distance;
+
+		SampleProvider sp = sampleProviderLeft;
+		float distance = 0;
+		for (int i = 0; i < 3; i++) {
+			float[] sample = new float[sp.sampleSize()];
+			sp.fetchSample(sample, 0);
+			distance += sample[0];
+			Delay.msDelay(50);
+			Thread.yield();
+		}
+
+		return distance / 3 * 100;
 	}
-	
-	public static float readRight(){
-		if(current_usonic_mode != Constants.FORWARD){
+
+	public static float readRight() {
+		if (current_usonic_mode != Constants.FORWARD) {
 			ultrasonicMotor.rotate(-90);
 			current_usonic_mode = Constants.FORWARD;
 		}
-		float [] sample = new float[sampleProviderRight.sampleSize()];
-    	sampleProviderRight.fetchSample(sample, 0);
-    	
-    	float distance = sample[0];
-    	return distance;
-	}
-	
-	public static float readForward(){
-		if(current_usonic_mode != Constants.FORWARD){
-			ultrasonicMotor.rotate(90);
-			current_usonic_mode = Constants.FORWARD;
+
+		SampleProvider sp = sampleProviderRight;
+		float distance = 0;
+		for (int i = 0; i < 3; i++) {
+			float[] sample = new float[sp.sampleSize()];
+			sp.fetchSample(sample, 0);
+			distance += sample[0];
+			Delay.msDelay(50);
+			Thread.yield();
 		}
-		float [] sample = new float[sampleProviderLeft.sampleSize()];
-    	sampleProviderLeft.fetchSample(sample, 0);
-    	
-    	float distance = sample[0];
-    	return distance;
+
+		return distance / 3 * 100;
 	}
 
-	public static float[] readColor() {
-		Color color = colorAdapter.getColor();
+	public static float readForward() {
+		SampleProvider sp;
+		if (current_usonic_mode != Constants.FORWARD) {
+			sp = sampleProviderRight;
+		} else {
+			sp = sampleProviderLeft;
+		}
 
-		return new float[] { color.getRed(), color.getGreen(), color.getBlue() };
+		float distance = 0;
+		for (int i = 0; i < 3; i++) {
+			float[] sample = new float[sp.sampleSize()];
+			sp.fetchSample(sample, 0);
+			distance += sample[0];
+			Delay.msDelay(50);
+			Thread.yield();
+		}
+
+		return distance / 3 * 100;
+
 	}
+
+	// public static float[] readColor() {
+	// //Color color = colorAdapter.getColor();
+	//
+	// return new float[] { color.getRed(), color.getGreen(), color.getBlue() };
+	// }
 
 	public static void setGyroStabilizer(float f) {
 		currentGyroFix = f;
@@ -144,4 +217,76 @@ public class Main {
 		return currentGyroFix;
 	}
 
+	private static void rotateCorner() {
+		if (DIRECTION == 1)
+			movements.rotate_right();
+		else
+			movements.rotate_left();
+
+		double d = 1000;
+		while (d < 50) {
+			movements.goStraight(10);
+			if (DIRECTION == 1)
+				d = readRight();
+			else
+				d = readLeft();
+		}
+		DISTANCE = 0;
+
+	}
+
+	private static void enterEntrance() {
+
+		if (DIRECTION == 1)
+			movements.rotate_right();
+		else
+			movements.rotate_left();
+
+		double d = 1000;
+
+		while (d > 250) {
+			movements.goStraight(10);
+			d = readLeft() + readRight();
+		}
+		current_phase = Constants.PHASE2;
+
+	}
+
+	private static boolean isEntranceByControllForward() {
+		boolean isEntrance = false;
+		movements.goStraight(40);
+		double d;
+		if (DIRECTION == 1)
+			d = readRight();
+		else
+			d = readLeft();
+
+		if (d < 50)
+			isEntrance = true;
+		else
+			isEntrance = false;
+		movements.goStraight(-40);
+		return isEntrance;
+
+	}
+
+	public static float travelUntilNoneWall(double wall_distance) {
+		int count = 0;
+		float traveled_distance = 0;
+		while (traveled_distance + 20 < wall_distance) {
+			movements.goStraight(20);
+			traveled_distance += 20;
+			float f;
+			if (DIRECTION == 1)
+				f = readRight();
+			else
+				f = readLeft();
+			if (f > 50) {
+				count++;
+				if (count > 1)
+					return traveled_distance;
+			}
+		}
+		return -1;
+	}
 }
