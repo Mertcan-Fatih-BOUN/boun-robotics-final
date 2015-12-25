@@ -82,9 +82,6 @@ public class Main {
 
 		Delay.msDelay(100);
 
-		while (Button.readButtons() != Button.ID_UP) {
-			Delay.msDelay(100);
-		}
 		current_phase = Constants.PHASE1;
 
 		double forward_distance;
@@ -111,10 +108,13 @@ public class Main {
 				DISTANCE = readForward();
 				movements.rotate_back();
 				DIRECTION *= -1;
+				send_to_pc(Constants.LOG_DISTANCE, (float) DISTANCE);
+				send_to_pc(Constants.LOG_DIRECTION, DIRECTION);
 			} else {
 				// Now where it is
 				if (DISTANCE != -1) {
 					DISTANCE += traveledDistance;
+					send_to_pc(Constants.LOG_DISTANCE, (float) DISTANCE);
 					if (DISTANCE > 66 && DISTANCE < 132) {
 						enterEntrance();
 					} else
@@ -255,13 +255,15 @@ public class Main {
 	}
 
 	private static void rotateCorner() {
+		movements.goStraight(20);
+		send_to_pc(Constants.LOG_ROTATE_CORNER, 0);
 		if (DIRECTION == 1)
 			movements.rotate_right();
 		else
 			movements.rotate_left();
 
 		double d = 1000;
-		while (d < 50) {
+		while (d > 50) {
 			movements.goStraight(10);
 			if (DIRECTION == 1)
 				d = readRight();
@@ -273,7 +275,8 @@ public class Main {
 	}
 
 	private static void enterEntrance() {
-
+		int count = 0;
+		send_to_pc(Constants.LOG_ENTER, 0);
 		if (DIRECTION == 1)
 			movements.rotate_right();
 		else
@@ -281,12 +284,16 @@ public class Main {
 
 		double d = 1000;
 
-		while (d > 250) {
+		while (true) {
 			movements.goStraight(10);
 			d = readLeft() + readRight();
+			if (d < 250)
+				count++;
+			if (count > 1) {
+				current_phase = Constants.PHASE2;
+				break;
+			}
 		}
-		current_phase = Constants.PHASE2;
-
 	}
 
 	private static boolean isEntranceByControllForward() {
@@ -312,8 +319,9 @@ public class Main {
 		float traveled_distance = 0;
 		double wall_distance = 10000;
 		while (wall_distance > 30) {
-			movements.goStraight(20);
-			traveled_distance += 20;
+			movements.goStraight(10);
+			traveled_distance += 10;
+			send_to_pc(Constants.LOG_DISTANCE, (float) (DISTANCE + traveled_distance));
 			float f;
 			if (DIRECTION == 1)
 				f = readRight();
