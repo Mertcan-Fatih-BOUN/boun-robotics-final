@@ -1,4 +1,3 @@
-package robo;
 public class Movements {
 	public static void goStraight(int distance){
 		if(distance <= 10){
