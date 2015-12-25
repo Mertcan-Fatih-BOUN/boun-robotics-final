@@ -21,6 +21,10 @@ import lejos.utility.Delay;
 import lejos.utility.PilotProps;
 
 public class Main {
+
+	static final int WALL_RETURN = -1;
+	static final int EDGE_END_RETURN = -2;
+
 	static EV3 ev3 = (EV3) BrickFinder.getDefault();
 	static GraphicsLCD graphicsLCD = ev3.getGraphicsLCD();
 	public static int current_phase = -1;
@@ -270,10 +274,11 @@ public class Main {
 
 	}
 
-	public static float travelUntilNoneWall(double wall_distance) {
+	public static float travelUntilNoneWall() {
 		int count = 0;
 		float traveled_distance = 0;
-		while (traveled_distance + 20 < wall_distance) {
+		double wall_distance = 10000;
+		while (wall_distance > 30) {
 			movements.goStraight(20);
 			traveled_distance += 20;
 			float f;
@@ -286,6 +291,7 @@ public class Main {
 				if (count > 1)
 					return traveled_distance;
 			}
+			wall_distance = readForward();
 		}
 		return -1;
 	}
