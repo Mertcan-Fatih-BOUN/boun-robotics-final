@@ -1,5 +1,6 @@
 package robo;
 
+import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
 import lejos.hardware.sensor.EV3GyroSensor;
 import lejos.robotics.Color;
@@ -8,6 +9,8 @@ import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
 import lejos.utility.Delay;
 import lejos.utility.PilotProps;
+import out.LCDController;
+
 import static robo.ConstantsVariables.*;
 
 import java.awt.Point;
@@ -32,10 +35,12 @@ public class MovementController {
 		colorAdapter = ca;
 	}
 
-	public static void gyroReset(){
+	public static void gyroReset() {
 		gyroSensor.reset();
 	}
 	
+	private static int step = 20;
+
 	public static void goStraight(int distance) {
 		if (IS_INTERRUPTED)
 			return;
@@ -47,11 +52,11 @@ public class MovementController {
 			_dir = 1;
 		int abs_distance = distance / _dir;
 
-		if (abs_distance <= 10) {
+		if (abs_distance <= step) {
 			goStraight_(_dir * abs_distance);
 		} else {
-			goStraight_(_dir * 10);
-			goStraight(_dir * (abs_distance - 10));
+			goStraight_(_dir * step);
+			goStraight(_dir * (abs_distance - step));
 		}
 	}
 
@@ -103,13 +108,20 @@ public class MovementController {
 
 		if (CURRENT_PHASE == PHASE_MAPPING) {
 			Color c = colorAdapter.getColor();
-			if (c.getRed() > 150 && c.getBlue() < 50 && c.getGreen() < 50)
+			LCDController.print("r: " + c.getRed() + "\ng: " + c.getGreen() + "\nb: " + c.getBlue());
+
+			if (c.getRed() > 7 && c.getBlue() < 7 && c.getGreen() < 7) {
 				red.add(new Point(X, Y));
-			if (c.getRed() < 50 && c.getBlue() < 50 && c.getGreen() > 150)
+				Sound.playTone(440, 100, 10);
+				Sound.beepSequenceUp();
+			}
+			if (c.getRed() < 7 && c.getBlue() < 7 && c.getGreen() > 7) {
+
 				green.add(new Point(X, Y));
+				Sound.beepSequence();
+			}
 		}
-		
-		
+
 	}
 
 	public static void rotate_left() {
@@ -142,10 +154,9 @@ public class MovementController {
 	private static void rotate_exact_to(float goal) {
 		if (IS_INTERRUPTED)
 			return;
-		goal = goal;
 
 		float diff = goal - readAngle();
-		while (Math.abs(diff) > 0.5) {
+		while (Math.abs(diff) > 0.5 && IS_INTERRUPTED) {
 			pilot.rotate(diff);
 			diff = goal - readAngle();
 		}
@@ -165,8 +176,8 @@ public class MovementController {
 	}
 
 	public static void goToGrid(int mx, int my) {
-		// goTo(mx * 33 + 15, my * 33 + 15h);
-		goTo(mx * 10, my * 10);
+		goTo(mx * 33 + 15, my * 33 + 15);
+		// goTo(mx * 10, my * 10);
 	}
 
 	public static void goTo(int mx, int my) {
@@ -236,7 +247,7 @@ public class MovementController {
 		Y = 0;
 		HEADING = 0;
 		gyroSensor.reset();
-		Delay.msDelay(100);
+		Delay.msDelay(500);
 		Thread.yield();
 	}
 

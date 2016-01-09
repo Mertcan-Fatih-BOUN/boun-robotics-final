@@ -100,7 +100,7 @@ public class EntranceTask implements Runnable {
 			d = Main.readLeft() + Main.readRight();
 			if (d < 250)
 				count++;
-			if (count > 1) {
+			if (count > 2) {
 				CURRENT_PHASE = -1;
 				break;
 			}

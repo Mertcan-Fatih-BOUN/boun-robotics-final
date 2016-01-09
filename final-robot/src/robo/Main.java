@@ -15,6 +15,7 @@ import lejos.hardware.port.SensorPort;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.hardware.sensor.EV3GyroSensor;
 import lejos.hardware.sensor.NXTUltrasonicSensor;
+import lejos.robotics.Color;
 import lejos.robotics.ColorAdapter;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
@@ -35,7 +36,7 @@ public class Main {
 
 	static EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.A);
 	static EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.D);
-	static EV3LargeRegulatedMotor gripperMotor = new EV3LargeRegulatedMotor(MotorPort.B);
+	public static EV3LargeRegulatedMotor gripperMotor = new EV3LargeRegulatedMotor(MotorPort.B);
 	static NXTRegulatedMotor ultrasonicMotor = new NXTRegulatedMotor(MotorPort.C);
 
 	static NXTUltrasonicSensor ultrasonicSensorLeft = new NXTUltrasonicSensor(SensorPort.S4);
@@ -68,6 +69,12 @@ public class Main {
 
 		// dataOutputStream = new DataOutputStream(outputStream);
 
+//		for (int i = 0; i < 1000; i++) {
+//			Color c = colorAdapter.getColor();
+//			LCDController.print("r: " + c.getRed() + "\ng: " + c.getGreen() + "\nb: " + c.getBlue());
+//			Delay.msDelay(100);
+//		}
+
 		Thread entrance_thread = null;
 		Thread execution_thread = null;
 		Thread mapping_thread = null;
@@ -76,7 +83,6 @@ public class Main {
 		ExecutionTask executionTask = null;
 		MappingTask mappingTask = null;
 
-		System.out.println("fsafsafas");
 		while (true) {
 			int button = Button.waitForAnyPress();
 
