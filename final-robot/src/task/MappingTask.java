@@ -58,7 +58,7 @@ public class MappingTask implements Runnable {
 //		for(int i = 2; i < 5; i++){
 //			goToGrid(1, i);
 //			readRight();
-//			if(f < 30){
+//			if(r < 30){
 //				grid[0][i] = 1;
 //			}else{
 //				grid[0][i] = 0;
@@ -66,7 +66,7 @@ public class MappingTask implements Runnable {
 //		}
 //		rotate_left();
 //		readRight();
-//		if(f < 30){
+//		if(r < 30){
 //			grid[1][5] = 1;
 //		}else{
 //			grid[1][5] = 0;
@@ -74,7 +74,7 @@ public class MappingTask implements Runnable {
 //		for(int i = 2; i < 5; i++){
 //			goToGrid(4, i);
 //			readRight();
-//			if(f < 30){
+//			if(r < 30){
 //				grid[i][5] = 1;
 //			}else{
 //				grid[i][5] = 0;
@@ -85,15 +85,15 @@ public class MappingTask implements Runnable {
 ////		LCDController.print(getX() + "\n" + getY());
 //		rotate_left();
 //		readRight();
-//		if(f < 30){
+//		if(r < 30){
 //			grid[5][4] = 1;
 //		}else{
 //			grid[5][4] = 0;
 //		}
-//		for(int i = 3; i > 0; i++){
+//		for(int i = 3; i > 0; i--){
 //			goToGrid(4, i);
 //			readRight();
-//			if(f < 30){
+//			if(r < 30){
 //				grid[5][i] = 1;
 //			}else{
 //				grid[5][i] = 0;
@@ -110,19 +110,36 @@ public class MappingTask implements Runnable {
 //		goToGrid(3, 2);
 //		LCDController.print(getX() + "\n" + getY());
 //
-		Point red = getRedAverage();
-		Point green = getGreenAverage();
+		
+//		EXECUTION PART STARTS HERE
+//		Point red = getRedAverage();
+//		Point green = getGreenAverage();
+		Point red = new Point();
+		Point green = new Point();
+//		goTo(red.x, red.y);
+		goTo(10, 10);
 		red.x = 10; red.y = 10;
-		green.x = 30; green.y = 40;
-		goTo(red.x, red.y);
-		int angle = (int)Math.atan(((double)red.y - (double)green.y)/Math.abs(red.x - green.x));		
-		while(normalize(HEADING) != 0)
-			rotate_right();
-		
-		rotate_exact(angle);
-		gyroReset();
-		goStraight((int)red.distance(green));
-		
+		green.x = 30; green.y = 10;
+		if(green.x <= red.x + 1 && green.x >= red.x - 1){
+			while(normalize(HEADING) != 0)
+				rotate_right();
+			goStraight((int)(green.y - red.y));
+		}else if(green.y <= red.y + 1 && green.y >= red.y - 1){
+			while(normalize(HEADING) != 90)
+				rotate_right();
+			goStraight((int)(green.x - red.x));
+		}else{
+			int angle = (int)Math.toDegrees(Math.atan(((double)red.y - (double)green.y)/Math.abs(red.x - green.x)));		
+			LCDController.print(angle + "\n");
+			while(normalize(HEADING) != 0)
+				rotate_right();
+			if(green.x < red.x)
+				rotate_exact(angle);
+			else
+				rotate_exact(-angle);
+			gyroReset();
+			goStraight((int)red.distance(green));
+		}
 		Sound.playTone(440, 100, 10);
 	}
 

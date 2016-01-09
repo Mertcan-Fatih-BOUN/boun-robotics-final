@@ -43,7 +43,7 @@ public class Main {
 	static EV3ColorSensor lightSensor = new EV3ColorSensor(SensorPort.S3);
 	static EV3GyroSensor gyroSensor = new EV3GyroSensor(SensorPort.S1);
 	static ColorAdapter colorAdapter = new ColorAdapter(lightSensor);
-	
+
 	// static ColorAdapter colorAdapter = new ColorAdapter(lightSensor);
 	static SampleProvider sampleProviderGyro = gyroSensor.getAngleAndRateMode();
 	static SampleProvider sampleProviderLeft = ultrasonicSensorLeft.getDistanceMode();
@@ -76,8 +76,12 @@ public class Main {
 		ExecutionTask executionTask = null;
 		MappingTask mappingTask = null;
 
+		System.out.println("fsafsafas");
 		while (true) {
 			int button = Button.waitForAnyPress();
+
+			LCDController.print(button + "");
+
 			if (button == Button.ID_UP || button == Button.ID_DOWN || button == Button.ID_LEFT
 					|| button == Button.ID_ESCAPE) {
 
