@@ -2,17 +2,16 @@ package task;
 
 import lejos.hardware.Sound;
 import out.LCDController;
-import robo.Main;
-import robo.MovementController;
+import out.PCOutController;
+import sensor.ColorReader;
+import sensor.UltrasonicReader;
 
-import static robo.ConstantsVariables.*;
-import static robo.MovementController.goStraight;
-import static robo.MovementController.rotate_right;
-import static robo.MovementController.setX;
+import static actuator.MovementController.*;
 
-import java.awt.Point;
+import actuator.MovementController;
+import static robo.Main.IS_INTERRUPTED;
 
-import static robo.MovementController.*;
+import java.util.Random;
 
 public class MappingTask implements Runnable {
 	float l = 0;
@@ -38,12 +37,11 @@ public class MappingTask implements Runnable {
 
 		rotate_right();
 		readRight();
-		while (r > 50) {
+		while (r > 50 && !IS_INTERRUPTED) {
 			goStraight(5);
 			readRight();
 		}
 		readForward();
-
 
 		setY(r);
 
@@ -51,103 +49,103 @@ public class MappingTask implements Runnable {
 		LCDController.print(getX() + "\n" + getY());
 		readRight();
 		if (r < 30) {
-			Sound.buzz();
-			grid[0][1] = 1;
+			fillGrid(0, 1, 1);
 		} else {
-			grid[0][1] = 0;
+			fillGrid(0, 1, 0);
 		}
 		for (int i = 2; i < 5; i++) {
 			goToGrid(1, i);
 			readRight();
 			if (r < 30) {
-				Sound.buzz();
-				grid[0][i] = 1;
+				fillGrid(0, i, 1);
 			} else {
-				grid[0][i] = 0;
+				fillGrid(0, i, 0);
 			}
 		}
-readForward();
+		readForward();
 		if (f < 30) {
-			Sound.buzz();
-			grid[1][5] = 1;
+			fillGrid(1, 5, 1);
 		} else {
-			grid[1][5] = 0;
+			fillGrid(1, 5, 0);
 		}
 		for (int i = 2; i < 5; i++) {
 			goToGrid(i, 4);
 			readRight();
 			if (r < 30) {
-				Sound.buzz();
-				grid[i][5] = 1;
+				fillGrid(i, 5, 1);
 			} else {
-				grid[i][5] = 0;
+				fillGrid(i, 5, 0);
 			}
 		}
 		LCDController.print(getX() + "\n" + getY());
-		// goToGrid(4, 4);
-		// LCDController.print(getX() + "\n" + getY());
+
 		readForward();
 		if (f < 30) {
-			Sound.buzz();
-			grid[5][4] = 1;
+			fillGrid(5, 4, 1);
 		} else {
-			grid[5][4] = 0;
+			fillGrid(5, 4, 0);
 		}
 		for (int i = 3; i > 0; i--) {
 			goToGrid(4, i);
 			readRight();
 			if (r < 30) {
-				Sound.buzz();
-				grid[5][i] = 1;
+				fillGrid(5, i, 1);
 			} else {
-				grid[5][i] = 0;
+				fillGrid(5, i, 0);
 			}
 		}
-		// goToGrid(4, 1);
-		// LCDController.print(getX() + "\n" + getY());
-		goToGrid(2, 1);
-		LCDController.print(getX() + "\n" + getY());
-		goToGrid(2, 3);
-		LCDController.print(getX() + "\n" + getY());
-		goToGrid(3, 3);
-		LCDController.print(getX() + "\n" + getY());
-		goToGrid(3, 2);
-		LCDController.print(getX() + "\n" + getY());
-		//
 
-		// EXECUTION PART STARTS HERE
-		// Point red = getRedAverage();
-		// Point green = getGreenAverage();
-		// Point red = new Point();
-		// Point green = new Point();
-		// // goTo(red.x, red.y);
-		// goTo(10, 10);
-		// red.x = 10;
-		// red.y = 10;
-		// green.x = 30;
-		// green.y = 10;
-		// if (green.x <= red.x + 1 && green.x >= red.x - 1) {
-		// while (normalize(HEADING) != 0)
-		// rotate_right();
-		// goStraight((int) (green.y - red.y));
-		// } else if (green.y <= red.y + 1 && green.y >= red.y - 1) {
-		// while (normalize(HEADING) != 90)
-		// rotate_right();
-		// goStraight((int) (green.x - red.x));
-		// } else {
-		// int angle = (int) Math
-		// .toDegrees(Math.atan(((double) red.y - (double) green.y) /
-		// Math.abs(red.x - green.x)));
-		// LCDController.print(angle + "\n");
-		// while (normalize(HEADING) != 0)
-		// rotate_right();
-		// if (green.x < red.x)
-		// rotate_exact(angle);
-		// else
-		// rotate_exact(-angle);
-		// gyroReset();
-		// goStraight((int) red.distance(green));
-		// }
+		for (int i = 0; i < 1; i++) {
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(2, 1);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(2, 3);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(3, 3);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(3, 2);
+		}
+
+		for (int i = 0; i < 1; i++) {
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			rotate_back();
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(3, 3);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(2, 3);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(2, 1);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(4, 1);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(4, 4);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(1, 4);
+			if (ColorReader.allFound() || IS_INTERRUPTED)
+				break;
+			goToGrid(1, 1);
+		}
+
+		Random generator = new Random();
+		while (!ColorReader.allFound() && !IS_INTERRUPTED) {
+			int i = generator.nextInt(3) + 1;
+			int j = generator.nextInt(3) + 1;
+			goToGrid(i, j);
+		}
+
+		MovementController.writeToFile();
+		ColorReader.writeToFile();
 		Sound.playTone(440, 100, 10);
 	}
 
@@ -155,24 +153,33 @@ readForward();
 	 * Rotates
 	 */
 	public void rotate() {
-		// TODO Auto-generated method stub
-		float f = Main.readForward();
-		float l = Main.readLeft();
-		float r = Main.readRight();
+		float f = UltrasonicReader.readForward();
+		float l = UltrasonicReader.readLeft();
+		float r = UltrasonicReader.readRight();
 		LCDController.print(f + "\n" + l + "\n" + r);
 	}
 
 	private void readLeft() {
-		l = Main.readLeft();
+		l = UltrasonicReader.readLeft();
 	}
 
 	private void readRight() {
-		r = Main.readRight();
+		r = UltrasonicReader.readRight();
 
 	}
 
 	private void readForward() {
-		f = Main.readForward();
+		f = UltrasonicReader.readForward();
+	}
 
+	private void fillGrid(int x, int y, int fill) {
+		grid[x][y] = fill;
+
+		if (fill == 1) {
+			Sound.buzz();
+			PCOutController.write("There is obstacle: " + x + " " + y);
+		} else {
+			PCOutController.write("There is no obstacle: " + x + " " + y);
+		}
 	}
 }

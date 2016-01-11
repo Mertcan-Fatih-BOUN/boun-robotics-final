@@ -1,13 +1,14 @@
 package task;
 
 import lejos.hardware.Sound;
-import lejos.utility.PilotProps;
 import out.LCDController;
-import static robo.ConstantsVariables.*;
-import robo.Main;
-import robo.MovementController;
+import out.PCOutController;
 
-import static robo.MovementController.*;
+import static actuator.MovementController.*;
+import static robo.Main.*;
+import static sensor.UltrasonicReader.*;
+
+import actuator.MovementController;
 
 public class EntranceTask implements Runnable {
 	int EDGE = -1;
@@ -19,8 +20,8 @@ public class EntranceTask implements Runnable {
 		MovementController.reset();
 		Sound.playTone(440, 100, 10);
 
-		double left_distance = Main.readLeft();
-		double right_ditance = Main.readRight();
+		double left_distance = readLeft();
+		double right_ditance = readRight();
 
 		if (left_distance < right_ditance)
 			DIRECTION = -1;
@@ -32,16 +33,16 @@ public class EntranceTask implements Runnable {
 
 			// Encounter wall
 			if (traveledDistance == -1) {
-				DISTANCE = Main.readForward();
+				DISTANCE = readForward();
 				rotate_back();
 				DIRECTION *= -1;
-				Main.send_to_pc(LOG_DISTANCE, (float) DISTANCE);
-				Main.send_to_pc(LOG_DIRECTION, DIRECTION);
+				PCOutController.write("Wall encountered Distance: " + DIRECTION);
+				PCOutController.write("New Direction is: " + DIRECTION);
 			} else {
-				// Now where it is
+				// Know where it is
 				if (DISTANCE != -1) {
 					DISTANCE += traveledDistance;
-					Main.send_to_pc(LOG_DISTANCE, (float) DISTANCE);
+					PCOutController.write("Distance: " + DISTANCE);
 					if (DISTANCE > 66 && DISTANCE < 132 & !IS_INTERRUPTED) {
 						enterEntrance();
 					} else
@@ -64,7 +65,8 @@ public class EntranceTask implements Runnable {
 			return;
 
 		goStraight(20);
-		Main.send_to_pc(LOG_ROTATE_CORNER, 0);
+		PCOutController.write("Starting to rotate corner");
+
 		if (DIRECTION == 1)
 			rotate_right();
 		else
@@ -74,9 +76,9 @@ public class EntranceTask implements Runnable {
 		while (d > 50 & !IS_INTERRUPTED) {
 			goStraight(10);
 			if (DIRECTION == 1)
-				d = Main.readRight();
+				d = readRight();
 			else
-				d = Main.readLeft();
+				d = readLeft();
 		}
 		DISTANCE = 0;
 
@@ -87,7 +89,7 @@ public class EntranceTask implements Runnable {
 			return;
 
 		int count = 0;
-		Main.send_to_pc(LOG_ENTER, 0);
+		PCOutController.write("Starting to enter");
 		if (DIRECTION == 1)
 			rotate_right();
 		else
@@ -97,7 +99,7 @@ public class EntranceTask implements Runnable {
 
 		while (true & !IS_INTERRUPTED) {
 			goStraight(10);
-			d = Main.readLeft() + Main.readRight();
+			d = readLeft() + readRight();
 			if (d < 250)
 				count++;
 			if (count > 2) {
@@ -116,9 +118,9 @@ public class EntranceTask implements Runnable {
 		goStraight(40);
 		double d;
 		if (DIRECTION == 1)
-			d = Main.readRight();
+			d = readRight();
 		else
-			d = Main.readLeft();
+			d = readLeft();
 
 		if (d < 50)
 			isEntrance = true;
@@ -139,18 +141,18 @@ public class EntranceTask implements Runnable {
 		while (wall_distance > 30 & !IS_INTERRUPTED) {
 			goStraight(10);
 			traveled_distance += 10;
-			Main.send_to_pc(LOG_DISTANCE, (float) (DISTANCE + traveled_distance));
+			PCOutController.write("Distance: " + DISTANCE + traveled_distance);
 			float f;
 			if (DIRECTION == 1)
-				f = Main.readRight();
+				f = readRight();
 			else
-				f = Main.readLeft();
+				f = readLeft();
 			if (f > 50) {
 				count++;
 				if (count > 1)
 					return traveled_distance;
 			}
-			wall_distance = Main.readForward();
+			wall_distance = readForward();
 		}
 		return -1;
 	}

@@ -1,45 +1,54 @@
-package robo;
+package actuator;
 
-import lejos.hardware.Sound;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
+import lejos.hardware.port.Port;
 import lejos.hardware.sensor.EV3GyroSensor;
-import lejos.robotics.Color;
-import lejos.robotics.ColorAdapter;
 import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
 import lejos.utility.Delay;
-import lejos.utility.PilotProps;
-import out.LCDController;
+import out.PCOutController;
+import sensor.ColorReader;
 
-import static robo.ConstantsVariables.*;
+import static robo.Main.*;
 
 import java.awt.Point;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
 
 public class MovementController {
+	private static final int step = 10;
+
 	private static int X = 0;
 	private static int Y = 0;
-	public static int HEADING = 0;
+	private static int HEADING = 0;
 
 	private static EV3GyroSensor gyroSensor;
 	private static DifferentialPilot pilot;
 	private static SampleProvider sampleProviderGyro;
-	private static ColorAdapter colorAdapter;
 
-	public static void initialize(EV3LargeRegulatedMotor leftMotor, EV3LargeRegulatedMotor rightMotor,
-			EV3GyroSensor gyro, ColorAdapter ca) {
+	public static void initialize(Port leftMotorPort, Port rightMotorPort, Port gyroPort) {
+		EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(leftMotorPort);
+		EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(rightMotorPort);
+		gyroSensor = new EV3GyroSensor(gyroPort);
+		sampleProviderGyro = gyroSensor.getAngleAndRateMode();
+
 		pilot = new DifferentialPilot(5.5, 5.5, 12.1, leftMotor, rightMotor, false);
 		pilot.setTravelSpeed(100);
 		pilot.setAcceleration(50);
-		gyroSensor = gyro;
-		sampleProviderGyro = gyroSensor.getAngleMode();
-		colorAdapter = ca;
+
+		gyroSensor.reset();
 	}
 
 	public static void gyroReset() {
 		gyroSensor.reset();
+		Delay.msDelay(500);
+		Thread.yield();
 	}
-	
-	private static int step = 20;
 
 	public static void goStraight(int distance) {
 		if (IS_INTERRUPTED)
@@ -57,25 +66,6 @@ public class MovementController {
 		} else {
 			goStraight_(_dir * step);
 			goStraight(_dir * (abs_distance - step));
-		}
-	}
-
-	public static void goStraight11(int distance) {
-		if (IS_INTERRUPTED)
-			return;
-
-		int _dir = 0;
-		if (distance < 0)
-			_dir = -1;
-		else
-			_dir = 1;
-		int abs_distance = distance / _dir;
-
-		if (abs_distance <= 11) {
-			goStraight_(_dir * abs_distance);
-		} else {
-			goStraight_(_dir * 11);
-			goStraight11(_dir * (abs_distance - 11));
 		}
 	}
 
@@ -106,20 +96,10 @@ public class MovementController {
 			break;
 		}
 
+		PCOutController.write("Location X Y: " + X + " " + Y);
+
 		if (CURRENT_PHASE == PHASE_MAPPING) {
-			Color c = colorAdapter.getColor();
-			LCDController.print("r: " + c.getRed() + "\ng: " + c.getGreen() + "\nb: " + c.getBlue());
-
-			if (c.getRed() > 7 && c.getBlue() < 7 && c.getGreen() < 7) {
-				red.add(new Point(X, Y));
-				Sound.playTone(440, 100, 10);
-				Sound.beepSequenceUp();
-			}
-			if (c.getRed() < 7 && c.getBlue() < 7 && c.getGreen() > 7) {
-
-				green.add(new Point(X, Y));
-				Sound.beepSequence();
-			}
+			ColorReader.readColor(X, Y);
 		}
 
 	}
@@ -131,6 +111,10 @@ public class MovementController {
 		float _goal = HEADING + 90;
 		rotate_exact_to(_goal);
 		HEADING = HEADING + 90;
+
+		if (CURRENT_PHASE == PHASE_MAPPING) {
+			ColorReader.readColor(X, Y);
+		}
 	}
 
 	public static void rotate_right() {
@@ -140,6 +124,10 @@ public class MovementController {
 		float _goal = HEADING - 90;
 		rotate_exact_to(_goal);
 		HEADING = HEADING - 90;
+
+		if (CURRENT_PHASE == PHASE_MAPPING) {
+			ColorReader.readColor(X, Y);
+		}
 	}
 
 	public static void rotate_back() {
@@ -149,6 +137,10 @@ public class MovementController {
 		float _goal = HEADING - 180;
 		rotate_exact_to(_goal);
 		HEADING = HEADING - 180;
+
+		if (CURRENT_PHASE == PHASE_MAPPING) {
+			ColorReader.readColor(X, Y);
+		}
 	}
 
 	private static void rotate_exact_to(float goal) {
@@ -162,7 +154,7 @@ public class MovementController {
 		}
 	}
 
-	public static void rotate_exact(float degree) {
+	private static void rotate_exact(float degree) {
 		if (IS_INTERRUPTED)
 			return;
 
@@ -177,7 +169,6 @@ public class MovementController {
 
 	public static void goToGrid(int mx, int my) {
 		goTo(mx * 33 + 15, my * 33 + 15);
-		// goTo(mx * 10, my * 10);
 	}
 
 	public static void goTo(int mx, int my) {
@@ -227,7 +218,7 @@ public class MovementController {
 		float[] sample = new float[sampleProviderGyro.sampleSize()];
 		sampleProviderGyro.fetchSample(sample, 0);
 		float angle = sample[0];
-		Main.send_to_pc(ConstantsVariables.LOG_ANGLE, angle);
+		PCOutController.write("Angle: " + angle);
 		return angle;
 	}
 
@@ -270,6 +261,30 @@ public class MovementController {
 
 	public static int getY() {
 		return Y;
+	}
+
+	public static void writeToFile() {
+		File f = new File("location.txt");
+		try {
+			FileWriter writer = new FileWriter(f, false);
+			writer.write(X + " " + Y + " " + HEADING);
+			writer.flush();
+			writer.close();
+			PCOutController.write("Location is written to file");
+		} catch (IOException e) {
+			PCOutController.write("Location cannot be written to file");
+		}
+	}
+
+	public static void readFromFile() {
+		try {
+			Scanner s = new Scanner(new BufferedReader(new FileReader(new File("location.txt"))));
+			X = s.nextInt();
+			Y = s.nextInt();
+			PCOutController.write("Location is read from file");
+		} catch (FileNotFoundException e) {
+			PCOutController.write("Location cannot be read location from file");
+		}
 	}
 
 }
