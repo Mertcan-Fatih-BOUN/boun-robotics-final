@@ -27,7 +27,7 @@ public class MappingTask implements Runnable {
 
 		readLeft();
 		readRight();
-		while (l + r < 1 & !IS_INTERRUPTED) {
+		while (l + r < 180 & !IS_INTERRUPTED) {
 			goStraight(-3);
 			readLeft();
 			readRight();
