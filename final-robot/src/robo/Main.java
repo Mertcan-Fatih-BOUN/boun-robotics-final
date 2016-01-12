@@ -1,11 +1,15 @@
 package robo;
 
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import actuator.GripperController;
+import actuator.MovementController;
 import lejos.hardware.BrickFinder;
 import lejos.hardware.Button;
 import lejos.hardware.motor.EV3LargeRegulatedMotor;
@@ -21,59 +25,32 @@ import lejos.robotics.SampleProvider;
 import lejos.robotics.navigation.DifferentialPilot;
 import lejos.utility.Delay;
 import out.LCDController;
+import out.PCOutController;
+import sensor.ColorReader;
+import sensor.UltrasonicReader;
 import task.EntranceTask;
 import task.ExecutionTask;
 import task.MappingTask;
-import static robo.ConstantsVariables.*;
 
 public class Main {
 
-	static final int WALL_RETURN = -1;
-	static final int EDGE_END_RETURN = -2;
+	public static final int PHASE_ENTRANCE = 0;
+	public static final int PHASE_MAPPING = 1;
+	public static final int PHASE_EXECUTION = 3;
 
-	public static float currentGyroFix = 0;
-	public static int current_usonic_mode = ConstantsVariables.FORWARD;
+	public static int CURRENT_PHASE = -1;
 
-	static EV3LargeRegulatedMotor leftMotor = new EV3LargeRegulatedMotor(MotorPort.A);
-	static EV3LargeRegulatedMotor rightMotor = new EV3LargeRegulatedMotor(MotorPort.D);
-	public static EV3LargeRegulatedMotor gripperMotor = new EV3LargeRegulatedMotor(MotorPort.B);
-	static NXTRegulatedMotor ultrasonicMotor = new NXTRegulatedMotor(MotorPort.C);
-
-	static NXTUltrasonicSensor ultrasonicSensorLeft = new NXTUltrasonicSensor(SensorPort.S4);
-	static NXTUltrasonicSensor ultrasonicSensorRight = new NXTUltrasonicSensor(SensorPort.S2);
-	static EV3ColorSensor lightSensor = new EV3ColorSensor(SensorPort.S3);
-	static EV3GyroSensor gyroSensor = new EV3GyroSensor(SensorPort.S1);
-	static ColorAdapter colorAdapter = new ColorAdapter(lightSensor);
-
-	// static ColorAdapter colorAdapter = new ColorAdapter(lightSensor);
-	static SampleProvider sampleProviderGyro = gyroSensor.getAngleAndRateMode();
-	static SampleProvider sampleProviderLeft = ultrasonicSensorLeft.getDistanceMode();
-	static SampleProvider sampleProviderRight = ultrasonicSensorRight.getDistanceMode();
-
-	static DifferentialPilot pilot;
-
-	// static OutputStream outputStream;
-
-	// static DataOutputStream dataOutputStream;
+	public static boolean IS_INTERRUPTED = false;
 
 	public static void main(String[] args) throws Exception {
 		LCDController.initialize(BrickFinder.getDefault().getGraphicsLCD());
-		MovementController.initialize(leftMotor, rightMotor, gyroSensor, colorAdapter);
-
-		// ServerSocket serverSocket = new ServerSocket(1234);
-		// Socket client = serverSocket.accept();
+		GripperController.initialize(MotorPort.B);
+		ColorReader.initialize(SensorPort.S3);
+		UltrasonicReader.initialize(SensorPort.S4, SensorPort.S2, MotorPort.C);
+		MovementController.initialize(MotorPort.A, MotorPort.D, SensorPort.S1);
+		PCOutController.initialize();
 
 		LCDController.print("Hello");
-
-		// outputStream = client.getOutputStream();
-
-		// dataOutputStream = new DataOutputStream(outputStream);
-
-//		for (int i = 0; i < 1000; i++) {
-//			Color c = colorAdapter.getColor();
-//			LCDController.print("r: " + c.getRed() + "\ng: " + c.getGreen() + "\nb: " + c.getBlue());
-//			Delay.msDelay(100);
-//		}
 
 		Thread entrance_thread = null;
 		Thread execution_thread = null;
@@ -163,97 +140,9 @@ public class Main {
 					}
 				}
 
-				readRight();
+				UltrasonicReader.readRight();
 				break;
 			}
 		}
 	}
-
-	public static void send_to_pc(int i, float f) {
-		// try {
-		// dataOutputStream.writeInt(i);
-		// dataOutputStream.flush();
-		//
-		// dataOutputStream.writeFloat(f);
-		// dataOutputStream.flush();
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-
-	}
-
-	public static float readLeft() {
-		if (current_usonic_mode != ConstantsVariables.LEFT) {
-			ultrasonicMotor.rotate(90);
-			current_usonic_mode = ConstantsVariables.LEFT;
-		}
-
-		SampleProvider sp = sampleProviderLeft;
-		float distance = 0;
-		for (int i = 0; i < 3; i++) {
-			float[] sample = new float[sp.sampleSize()];
-			sp.fetchSample(sample, 0);
-			distance += sample[0];
-			Delay.msDelay(50);
-			Thread.yield();
-		}
-		send_to_pc(ConstantsVariables.LOG_LEFT, distance / 3 * 100);
-		return distance / 3 * 100;
-	}
-
-	public static float readRight() {
-		if (current_usonic_mode != ConstantsVariables.FORWARD) {
-			ultrasonicMotor.rotate(-90);
-			current_usonic_mode = ConstantsVariables.FORWARD;
-		}
-
-		SampleProvider sp = sampleProviderRight;
-		float distance = 0;
-		for (int i = 0; i < 3; i++) {
-			float[] sample = new float[sp.sampleSize()];
-			sp.fetchSample(sample, 0);
-			distance += sample[0];
-			Delay.msDelay(50);
-			Thread.yield();
-		}
-		send_to_pc(ConstantsVariables.LOG_RIGHT, distance / 3 * 100);
-		return distance / 3 * 100;
-	}
-
-	public static float readForward() {
-		SampleProvider sp;
-		if (current_usonic_mode != ConstantsVariables.FORWARD) {
-			sp = sampleProviderRight;
-		} else {
-			sp = sampleProviderLeft;
-		}
-
-		float distance = 0;
-		for (int i = 0; i < 3; i++) {
-			float[] sample = new float[sp.sampleSize()];
-			sp.fetchSample(sample, 0);
-			distance += sample[0];
-			Delay.msDelay(50);
-			Thread.yield();
-		}
-		send_to_pc(ConstantsVariables.LOG_FORWARD, distance / 3 * 100);
-		return distance / 3 * 100;
-
-	}
-
-	// public static float[] readColor() {
-	// //Color color = colorAdapter.getColor();
-	//
-	// return new float[] { color.getRed(), color.getGreen(), color.getBlue() };
-	// }
-
-	public static void setGyroStabilizer(float f) {
-		currentGyroFix = f;
-	}
-
-	public static float getGyroStabilizer() {
-		return currentGyroFix;
-	}
-
 }

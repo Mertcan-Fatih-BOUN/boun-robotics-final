@@ -17,9 +17,5 @@ public class LCDController {
 			graphicsLCD.drawString(strings[i], graphicsLCD.getWidth() / 2, i * 15, GraphicsLCD.HCENTER);
 
 		}
-
-		// graphicsLCD.drawString(string, graphicsLCD.getWidth() / 2,
-		// graphicsLCD.getHeight() / 2,
-		// GraphicsLCD.VCENTER | GraphicsLCD.HCENTER);
 	}
 }
